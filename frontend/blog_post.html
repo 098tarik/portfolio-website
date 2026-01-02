@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Post</title>
+    <style>
+        body {
+            font-family: "Times New Roman", Times, serif;
+            margin: 40px;
+            line-height: 1.6;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        a {
+            color: blue;
+            text-decoration: underline;
+        }
+        h1 {
+            text-align: center;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+        .post-header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 20px;
+        }
+        .post-title {
+            font-size: 1.8em;
+            margin: 0 0 10px 0;
+            font-weight: bold;
+        }
+        .post-date {
+            font-style: italic;
+            color: #666;
+            font-size: 0.9em;
+        }
+        .post-content {
+            margin: 30px 0;
+            text-align: left;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .comments-section {
+            margin-top: 40px;
+            border-top: 2px solid #ccc;
+            padding-top: 30px;
+        }
+        .comments-section h2 {
+            font-size: 1.3em;
+            margin-bottom: 20px;
+        }
+        .comment-form {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-family: "Times New Roman", Times, serif;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        .form-group button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        .form-group button:hover {
+            background-color: #45a049;
+        }
+        .form-message {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 3px;
+            text-align: center;
+        }
+        .form-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .form-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .comments-list {
+            margin-top: 20px;
+        }
+        .comment {
+            background-color: #f5f5f5;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #4CAF50;
+            border-radius: 3px;
+        }
+        .comment-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .comment-date {
+            font-size: 0.85em;
+            color: #999;
+            margin-bottom: 10px;
+        }
+        .comment-text {
+            color: #333;
+        }
+        .back-link {
+            margin-bottom: 20px;
+        }
+        #loading {
+            text-align: center;
+            font-style: italic;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+<p class="back-link">
+<a href="/">Home</a> | 
+<a href="/about">About</a> | 
+<a href="/blog">Blog</a> | 
+<a href="/resume">Resume</a>
+</p>
+
+<div id="post">
+    <div id="loading">Loading post...</div>
+</div>
+
+<script>
+    // Get post ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const postId = urlParams.get('id');
+
+    async function loadPost() {
+        try {
+            const response = await fetch(`/api/blog/${postId}`);
+            const data = await response.json();
+            
+            if (data.error) {
+                document.getElementById('post').innerHTML = '<p>Post not found.</p>';
+                return;
+            }
+            
+            const post = data;
+            document.getElementById('post').innerHTML = `
+                <div class="post-header">
+                    <h1 class="post-title">${post.title}</h1>
+                    <p class="post-date">${post.date_published}</p>
+                </div>
+                <div class="post-content">
+                    <p>${post.content}</p>
+                </div>
+                <div class="comments-section">
+                    <h2>Comments</h2>
+                    <div class="comment-form">
+                        <div id="formMessage"></div>
+                        <form id="commentForm">
+                            <div class="form-group">
+                                <label for="name">Name:</label>
+                                <input type="text" id="name" name="name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="comment">Comment:</label>
+                                <textarea id="comment" name="comment" required></textarea>
+                            </div>
+                            <div class="form-group">
+                                <button type="submit">Post Comment</button>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="comments-list" id="comments"></div>
+                </div>
+            `;
+            
+            // Load comments
+            loadComments();
+            
+            // Set up form submission
+            document.getElementById('commentForm').addEventListener('submit', submitComment);
+        } catch (error) {
+            document.getElementById('post').innerHTML = '<p>Error loading post.</p>';
+            console.error('Error:', error);
+        }
+    }
+
+    async function loadComments() {
+        try {
+            const response = await fetch(`/api/blog/${postId}/comments`);
+            const data = await response.json();
+            
+            const commentsContainer = document.getElementById('comments');
+            
+            if (data.comments && data.comments.length > 0) {
+                commentsContainer.innerHTML = data.comments.map(comment => {
+                    const date = new Date(comment.created_at);
+                    const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                    return `
+                        <div class="comment">
+                            <div class="comment-name">${comment.name}</div>
+                            <div class="comment-date">${formattedDate}</div>
+                            <div class="comment-text">${comment.comment}</div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                commentsContainer.innerHTML = '<p>No comments yet. Be the first to comment!</p>';
+            }
+        } catch (error) {
+            console.error('Error loading comments:', error);
+        }
+    }
+
+    async function submitComment(e) {
+        e.preventDefault();
+        
+        const formMessage = document.getElementById('formMessage');
+        const name = document.getElementById('name').value;
+        const comment = document.getElementById('comment').value;
+        
+        try {
+            const response = await fetch(`/api/blog/${postId}/comments`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: name,
+                    comment: comment
+                })
+            });
+            
+            if (response.ok) {
+                formMessage.innerHTML = '<div class="form-message form-success">Comment posted successfully!</div>';
+                document.getElementById('commentForm').reset();
+                setTimeout(loadComments, 500);
+            } else {
+                formMessage.innerHTML = '<div class="form-message form-error">Error posting comment. Please try again.</div>';
+            }
+        } catch (error) {
+            formMessage.innerHTML = '<div class="form-message form-error">Error posting comment: ' + error.message + '</div>';
+            console.error('Error:', error);
+        }
+    }
+    
+    // Load post when page loads
+    window.onload = loadPost;
+</script>
+
+</body>
+</html>

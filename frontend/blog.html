@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog - John Doe</title>
+    <style>
+        body {
+            font-family: "Times New Roman", Times, serif;
+            margin: 40px;
+            line-height: 1.6;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            text-align: center;
+        }
+        a {
+            color: blue;
+            text-decoration: underline;
+        }
+        h1 {
+            text-align: center;
+            font-size: 1.2em;
+        }
+        h2 {
+            font-weight: bold;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .post {
+            margin-bottom: 30px;
+            text-align: left;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 20px;
+        }
+        .post h3 {
+            margin: 10px 0 5px 0;
+            font-weight: bold;
+        }
+        .post-date {
+            font-style: italic;
+            color: #666;
+            font-size: 0.9em;
+        }
+        .post-content {
+            margin-top: 10px;
+            color: #333;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        p {
+            margin: 5px 0;
+        }
+        #loading {
+            text-align: center;
+            font-style: italic;
+            color: #666;
+        }
+        #error {
+            text-align: center;
+            color: red;
+        }
+        .add-post-section {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-radius: 5px;
+        }
+        .add-post-section h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-family: "Times New Roman", Times, serif;
+            font-size: 1em;
+            box-sizing: border-box;
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        .form-group button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        .form-group button:hover {
+            background-color: #45a049;
+        }
+        .form-message {
+            text-align: center;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 3px;
+        }
+        .form-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .form-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+
+<p>
+<a href="/">Home</a> | 
+<a href="/about">About</a> | 
+<a href="/blog">Blog</a> | 
+<a href="/resume">Resume</a>
+</p>
+
+<h1>Blog</h1>
+
+<div class="add-post-section">
+    <h2>Add New Post</h2>
+    <div id="formMessage"></div>
+    <form id="addPostForm">
+        <div class="form-group">
+            <label for="postTitle">Title:</label>
+            <input type="text" id="postTitle" name="title" required>
+        </div>
+        <div class="form-group">
+            <label for="postContent">Content:</label>
+            <textarea id="postContent" name="content" required></textarea>
+        </div>
+        <div class="form-group">
+            <label for="postDate">Date Published:</label>
+            <input type="date" id="postDate" name="date_published" required>
+        </div>
+        <div class="form-group">
+            <button type="submit">Post to Blog</button>
+        </div>
+    </form>
+</div>
+
+<div id="loading">Loading posts...</div>
+<div id="error"></div>
+<div id="posts"></div>
+
+<script>
+    /**
+     * JAVASCRIPT OVERVIEW
+     * ==================
+     * 
+     * This script handles:
+     * 1. Loading blog posts from the API and displaying them
+     * 2. Handling form submission to create new posts
+     * 3. Calling the API (using fetch) to communicate with the backend
+     * 
+     * Key Concepts:
+     * - async/await: JavaScript syntax for handling asynchronous operations (waiting for API responses)
+     * - fetch: JavaScript function to make HTTP requests to APIs
+     * - JSON: Format for sending/receiving data
+     * - DOM manipulation: Adding/removing HTML elements dynamically
+     */
+
+    /**
+     * Load and display all blog posts from the API
+     * 
+     * Steps:
+     * 1. Fetch posts from /api/blog (GET request)
+     * 2. Hide the "Loading..." message
+     * 3. Loop through posts and create HTML for each
+     * 4. Display posts in the #posts container
+     * 5. Handle errors if the API call fails
+     */
+    async function loadBlogPosts() {
+        try {
+            // Step 1: Fetch data from the API
+            // fetch() returns a Promise (something that might take time to complete)
+            // await = "wait for this Promise to resolve before continuing"
+            const response = await fetch('/api/blog');
+            
+            // Parse the response as JSON
+            // This converts the JSON string to a JavaScript object
+            const data = await response.json();
+            
+            // Get references to HTML elements
+            const postsContainer = document.getElementById('posts');
+            const loadingDiv = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            
+            // Hide the "Loading..." message
+            loadingDiv.style.display = 'none';
+            
+            // Check if we got any posts
+            if (data.posts && data.posts.length > 0) {
+                // Step 3: Create HTML for each post
+                // .map() = loop through each post
+                // Template literals (backticks) = HTML string with ${variables}
+                // .join('') = concatenate all HTML strings together
+                postsContainer.innerHTML = data.posts.map(post => `
+                    <div class="post">
+                        <h3><a href="/blog/post?id=${post.id}">${post.title}</a></h3>
+                        <p class="post-date">${post.date_published}</p>
+                    </div>
+                `).join('');
+            } else {
+                postsContainer.innerHTML = '<p>No blog posts yet.</p>';
+            }
+        } catch (error) {
+            // If anything goes wrong, show an error message
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').innerHTML = '<p>Error loading blog posts.</p>';
+            console.error('Error:', error);
+        }
+    }
+
+    /**
+     * Handle blog post form submission
+     * 
+     * This runs when the user clicks the "Post to Blog" button
+     * Steps:
+     * 1. Prevent default form submission
+     * 2. Get form values from input fields
+     * 3. Send POST request to API
+     * 4. Show success/error message
+     * 5. Reload blog posts
+     */
+    document.getElementById('addPostForm').addEventListener('submit', async function(e) {
+        // Prevent the form from actually submitting (which would refresh the page)
+        e.preventDefault();
+        
+        // Get the message div where we'll display success/error messages
+        const formMessage = document.getElementById('formMessage');
+        
+        // Get the values the user typed in
+        const title = document.getElementById('postTitle').value;
+        const content = document.getElementById('postContent').value;
+        const date_published = document.getElementById('postDate').value;
+        
+        // Log to console for debugging
+        console.log('Submitting post:', { title, content, date_published });
+        
+        try {
+            // Make a POST request to create a new blog post
+            const response = await fetch('/api/blog', {
+                method: 'POST',  // Tell server we're creating something
+                headers: {
+                    'Content-Type': 'application/json',  // We're sending JSON data
+                },
+                // Convert JavaScript object to JSON string
+                body: JSON.stringify({
+                    title: title,
+                    content: content,
+                    date_published: date_published
+                })
+            });
+            
+            console.log('Response status:', response.status);
+            
+            // response.ok = true if status is 200-299 (success)
+            if (response.ok) {
+                // Parse the response (the newly created post)
+                const result = await response.json();
+                console.log('Post created successfully:', result);
+                
+                // Show success message
+                formMessage.innerHTML = '<div class="form-message form-success">Post added successfully!</div>';
+                
+                // Clear the form fields
+                document.getElementById('addPostForm').reset();
+                
+                // Wait 1 second, then reload blog posts to show the new one
+                setTimeout(loadBlogPosts, 1000);
+            } else {
+                // If the API returned an error
+                const error = await response.text();
+                console.error('Error response:', error);
+                formMessage.innerHTML = '<div class="form-message form-error">Error adding post. Please try again.</div>';
+            }
+        } catch (error) {
+            // If the fetch itself failed (network error, etc.)
+            console.error('Fetch error:', error);
+            formMessage.innerHTML = '<div class="form-message form-error">Error adding post: ' + error.message + '</div>';
+        }
+    });
+    
+    /**
+     * Initialize the page
+     * window.onload = when the entire page has loaded, run this function
+     */
+    window.onload = loadBlogPosts;
+</script>
+
+</body>
+</html>
