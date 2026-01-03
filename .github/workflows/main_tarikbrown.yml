@@ -51,12 +51,13 @@ jobs:
       - name: Azure Login (OIDC / az login)
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_14799F7B7DE64A73817E44F71341CD81 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_C6C8FE2B1DBB421B99390037A01A9E93 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_C5EBB209F4124A84B488EFE6DEEBBEAB }}
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: tarikbrown
           slot-name: Production
+
