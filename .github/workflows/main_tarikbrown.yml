@@ -1,3 +1,7 @@
+# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
+# More GitHub Actions for Azure: https://github.com/Azure/actions
+# More info on Python, GitHub Actions, and Azure App Service: https://aka.ms/python-webapps-actions
+
 name: Build and deploy Python app to Azure Web App - tarikbrown
 
 on:
@@ -10,23 +14,26 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: read #This is required for actions/checkout
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python version
         uses: actions/setup-python@v5
         with:
           python-version: '3.13'
 
-      - name: Install dependencies (local validation)
+      # 🛠️ Local Build Section (Optional)
+      # The following section in your workflow is designed to catch build issues early on the client side, before deployment. This can be helpful for debugging and validation. However, if this step significantly increases deployment time and early detection is not critical for your workflow, you may remove this section to streamline the deployment process.
+      - name: Create and Start virtual environment and Install dependencies
         run: |
           python -m venv antenv
           source antenv/bin/activate
           pip install -r requirements.txt
-
-      - name: Upload artifact
+                
+      # By default, when you enable GitHub CI/CD integration through the Azure portal, the platform automatically sets the SCM_DO_BUILD_DURING_DEPLOYMENT application setting to true. This triggers the use of Oryx, a build engine that handles application compilation and dependency installation (e.g., pip install) directly on the platform during deployment. Hence, we exclude the antenv virtual environment directory from the deployment artifact to reduce the payload size. 
+      - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v4
         with:
           name: python-app
@@ -34,56 +41,36 @@ jobs:
             .
             !antenv/
 
+      # 🚫 Opting Out of Oryx Build
+      # If you prefer to disable the Oryx build process during deployment, follow these steps:
+      # 1. Remove the SCM_DO_BUILD_DURING_DEPLOYMENT app setting from your Azure App Service Environment variables.
+      # 2. Refer to sample workflows for alternative deployment strategies: https://github.com/Azure/actions-workflow-samples/tree/master/AppService
+      
+
   deploy:
     runs-on: ubuntu-latest
     needs: build
-
     permissions:
-      id-token: write   # REQUIRED for OIDC az login
-      contents: read
+      id-token: write #This is required for requesting the JWT
+      contents: read #This is required for actions/checkout
 
     steps:
-      - name: Download artifact
+      - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
           name: python-app
-
-      - name: Azure CLI login via OIDC (command line)
-        shell: bash
-        env:
-          AZURE_CLIENT_ID: ${{ secrets.AZUREAPPSERVICE_CLIENTID_14799F7B7DE64A73817E44F71341CD81 }}
-          AZURE_TENANT_ID: ${{ secrets.AZUREAPPSERVICE_TENANTID_C6C8FE2B1DBB421B99390037A01A9E93 }}
-          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_C5EBB209F4124A84B488EFE6DEEBBEAB }}
-        run: |
-          set -euo pipefail
-
-          # Ensure Azure CLI exists (ubuntu-latest usually has it, but this makes it robust)
-          if ! command -v az >/dev/null 2>&1; then
-            curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-          fi
-
-          # Request a GitHub OIDC token for Azure
-          OIDC_TOKEN="$(curl -sS \
-            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange" \
-            | python -c "import sys, json; print(json.load(sys.stdin)['value'])")"
-
-          # Login with federated token (no client secret)
-          az login \
-            --service-principal \
-            --username "$AZURE_CLIENT_ID" \
-            --tenant "$AZURE_TENANT_ID" \
-            --federated-token "$OIDC_TOKEN" \
-            --allow-no-subscriptions
-
-          az account set --subscription "$AZURE_SUBSCRIPTION_ID"
-          az account show
-
-
-      - name: Deploy to Azure Web App
-        uses: azure/webapps-deploy@v3
+      
+      - name: Login to Azure
+        uses: azure/login@v2
         with:
-          app-name: tarikbrown
-          slot-name: Production
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_14799F7B7DE64A73817E44F71341CD81 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_C6C8FE2B1DBB421B99390037A01A9E93 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_C5EBB209F4124A84B488EFE6DEEBBEAB }}
 
-
+      - name: 'Deploy to Azure Web App'
+        uses: azure/webapps-deploy@v3
+        id: deploy-to-webapp
+        with:
+          app-name: 'tarikbrown'
+          slot-name: 'Production'
+          
