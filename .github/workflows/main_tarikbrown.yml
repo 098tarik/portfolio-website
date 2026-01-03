@@ -48,16 +48,42 @@ jobs:
         with:
           name: python-app
 
-      - name: Azure Login (OIDC / az login)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_14799F7B7DE64A73817E44F71341CD81 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_C6C8FE2B1DBB421B99390037A01A9E93 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_C5EBB209F4124A84B488EFE6DEEBBEAB }}
+      - name: Azure CLI login via OIDC (command line)
+        shell: bash
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZUREAPPSERVICE_CLIENTID_14799F7B7DE64A73817E44F71341CD81 }}
+          AZURE_TENANT_ID: ${{ secrets.AZUREAPPSERVICE_TENANTID_C6C8FE2B1DBB421B99390037A01A9E93 }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_C5EBB209F4124A84B488EFE6DEEBBEAB }}
+        run: |
+          set -euo pipefail
+
+          # Ensure Azure CLI exists (ubuntu-latest usually has it, but this makes it robust)
+          if ! command -v az >/dev/null 2>&1; then
+            curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+          fi
+
+          # Request a GitHub OIDC token for Azure
+          OIDC_TOKEN="$(curl -sS \
+            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange" \
+            | python -c "import sys, json; print(json.load(sys.stdin)['value'])")"
+
+          # Login with federated token (no client secret)
+          az login \
+            --service-principal \
+            --username "$AZURE_CLIENT_ID" \
+            --tenant "$AZURE_TENANT_ID" \
+            --federated-token "$OIDC_TOKEN" \
+            --allow-no-subscriptions
+
+          az account set --subscription "$AZURE_SUBSCRIPTION_ID"
+          az account show
+
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: tarikbrown
           slot-name: Production
+
 
