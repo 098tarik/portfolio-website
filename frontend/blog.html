@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" href="/data/Pictures/oreo.jpg">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Blog - John Doe</title>
@@ -137,7 +138,7 @@
 
 <h1>Blog</h1>
 
-<div class="add-post-section">
+<div class="add-post-section" id="addPostSection" style="display: none;">
     <h2>Add New Post</h2>
     <div id="formMessage"></div>
     <form id="addPostForm">
@@ -233,15 +234,53 @@
     }
 
     /**
-     * Handle blog post form submission
-     * 
-     * This runs when the user clicks the "Post to Blog" button
-     * Steps:
-     * 1. Prevent default form submission
-     * 2. Get form values from input fields
-     * 3. Send POST request to API
-     * 4. Show success/error message
-     * 5. Reload blog posts
+     * Check if the user is an authenticated admin
+     * If yes, show the blog form. If no, hide it.
+     */
+    async function checkAdminStatus() {
+        const token = localStorage.getItem('access_token');
+        const addPostSection = document.getElementById('addPostSection');
+        
+        // If no token, hide the form
+        if (!token) {
+            addPostSection.style.display = 'none';
+            return;
+        }
+        
+        try {
+            // Verify the token is still valid by fetching the current user
+            const response = await fetch('/users/me/', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (response.ok) {
+                const user = await response.json();
+                
+                // Show the form only if user is an admin
+                if (user.is_admin) {
+                    addPostSection.style.display = 'block';
+                    
+                    // Set today's date as default
+                    const today = new Date().toISOString().split('T')[0];
+                    document.getElementById('postDate').value = today;
+                } else {
+                    addPostSection.style.display = 'none';
+                }
+            } else {
+                // Token is invalid, hide the form
+                localStorage.removeItem('access_token');
+                addPostSection.style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Error checking admin status:', error);
+            addPostSection.style.display = 'none';
+        }
+    }
+
+    /**
+     * Update the form submission to include the authentication token
      */
     document.getElementById('addPostForm').addEventListener('submit', async function(e) {
         // Prevent the form from actually submitting (which would refresh the page)
@@ -249,6 +288,15 @@
         
         // Get the message div where we'll display success/error messages
         const formMessage = document.getElementById('formMessage');
+        
+        // Get the token from localStorage
+        const token = localStorage.getItem('access_token');
+        
+        // If no token, redirect to login
+        if (!token) {
+            window.location.href = '/admin';
+            return;
+        }
         
         // Get the values the user typed in
         const title = document.getElementById('postTitle').value;
@@ -260,10 +308,12 @@
         
         try {
             // Make a POST request to create a new blog post
+            // Now include the Authorization header with the JWT token
             const response = await fetch('/api/blog', {
                 method: 'POST',  // Tell server we're creating something
                 headers: {
                     'Content-Type': 'application/json',  // We're sending JSON data
+                    'Authorization': `Bearer ${token}`   // Include the JWT token
                 },
                 // Convert JavaScript object to JSON string
                 body: JSON.stringify({
@@ -291,9 +341,9 @@
                 setTimeout(loadBlogPosts, 1000);
             } else {
                 // If the API returned an error
-                const error = await response.text();
+                const error = await response.json();
                 console.error('Error response:', error);
-                formMessage.innerHTML = '<div class="form-message form-error">Error adding post. Please try again.</div>';
+                formMessage.innerHTML = '<div class="form-message form-error">Error: ' + (error.detail || 'Could not add post') + '</div>';
             }
         } catch (error) {
             // If the fetch itself failed (network error, etc.)
@@ -304,9 +354,13 @@
     
     /**
      * Initialize the page
-     * window.onload = when the entire page has loaded, run this function
+     * 1. Check if user is an admin and show/hide form accordingly
+     * 2. Load and display all blog posts
      */
-    window.onload = loadBlogPosts;
+    window.onload = function() {
+        checkAdminStatus();
+        loadBlogPosts();
+    };
 </script>
 
 </body>

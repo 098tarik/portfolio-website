@@ -3,3 +3,5 @@ uvicorn[standard]
 sqlalchemy
 python-dotenv
 gunicorn
+pyjwt
+pwdlib[argon2]

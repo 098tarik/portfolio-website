@@ -3,10 +3,10 @@ Blog API Routes - API Endpoints
 
 This file defines all the REST API endpoints for the blog system.
 These endpoints handle:
-- Getting blog posts (GET)
-- Creating blog posts (POST)
-- Getting comments (GET)
-- Creating comments (POST)
+- Getting blog posts (GET) - Public access
+- Creating blog posts (POST) - Admin only
+- Getting comments (GET) - Public access
+- Creating comments (POST) - Public access
 
 REST API Basics:
 - GET: Retrieve data (read-only, safe)
@@ -18,11 +18,14 @@ CRUD = Create, Read, Update, Delete
 We're implementing CRD (no Update/Delete for now).
 """
 
-from fastapi import APIRouter, Depends
+from typing import Annotated
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.db.database import get_db
 from app.models.blog import BlogPost, Comment
 from app.schemas.blog import BlogPostSchema, BlogPostCreateSchema, CommentSchema, CommentCreateSchema
+from app.schemas.user import UserResponse
+from app.core.security import get_current_admin_user
 
 # ============================================================================
 # ROUTER SETUP
@@ -43,16 +46,17 @@ def get_blog_posts(db: Session = Depends(get_db)):
     
     Retrieve all blog posts.
     
-    The 'db: Session = Depends(get_db)' part:
-    - db = parameter name
-    - Session = type (FastAPI knows to provide a database session)
-    - Depends(get_db) = dependency injection (FastAPI calls get_db() and gives us the result)
-    
     Returns:
     {
         "posts": [
-            { "id": 1, "title": "...", "content": "...", "date_published": "...", "comments": [] },
-            { "id": 2, "title": "...", ... },
+            {
+                "id": 1,
+                "title": "...",
+                "content": "...",
+                "date_published": "...",
+                "author": {"id": 1, "username": "...", "full_name": "..."},
+                "comments": []
+            },
             ...
         ]
     }
@@ -88,11 +92,15 @@ def get_blog_post(post_id: int, db: Session = Depends(get_db)):
     return BlogPostSchema.from_orm(post)
 
 @router.post("")
-def create_blog_post(post: BlogPostCreateSchema, db: Session = Depends(get_db)):
+def create_blog_post(
+    post: BlogPostCreateSchema,
+    current_admin: Annotated[UserResponse, Depends(get_current_admin_user)],
+    db: Session = Depends(get_db)
+):
     """
     POST /api/blog
     
-    Create a NEW blog post.
+    Create a NEW blog post (ADMIN ONLY).
     
     The 'post: BlogPostCreateSchema' parameter:
     - FastAPI automatically validates the JSON body against BlogPostCreateSchema
@@ -112,7 +120,8 @@ def create_blog_post(post: BlogPostCreateSchema, db: Session = Depends(get_db)):
     db_post = BlogPost(
         title=post.title,
         content=post.content,
-        date_published=post.date_published
+        date_published=post.date_published,
+        author_id=current_admin.id  # Link to the admin user who created it
     )
     
     # Add to the session (marks for insertion)
@@ -122,7 +131,7 @@ def create_blog_post(post: BlogPostCreateSchema, db: Session = Depends(get_db)):
     db.commit()
     
     # Refresh = reload the object from the database
-    # This ensures we have the auto-generated ID
+    # This ensures we have the auto-generated ID and relationships
     db.refresh(db_post)
     
     # Convert and return the new post
@@ -144,8 +153,13 @@ def get_comments(post_id: int, db: Session = Depends(get_db)):
     Returns:
     {
         "comments": [
-            { "id": 1, "blog_post_id": 5, "name": "John", "comment": "Great!", "created_at": "..." },
-            { "id": 2, "blog_post_id": 5, "name": "Jane", "comment": "I agree!", "created_at": "..." },
+            {
+                "id": 1,
+                "blog_post_id": 5,
+                "name": "John",
+                "comment": "Great!",
+                "created_at": "..."
+            },
             ...
         ]
     }
@@ -189,5 +203,6 @@ def create_comment(post_id: int, comment: CommentCreateSchema, db: Session = Dep
     
     # Convert and return
     return CommentSchema.from_orm(db_comment)
+
 
 

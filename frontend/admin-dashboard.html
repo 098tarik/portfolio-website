@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" href="/data/Pictures/oreo.jpg">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Resume Website</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Times New Roman", Times, serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar h1 {
+            font-size: 24px;
+        }
+
+        .navbar-right {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .user-info {
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid white;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .form-section {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .form-section h2 {
+            margin-bottom: 20px;
+            color: #667eea;
+            font-size: 22px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 150px;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            background: #fadbd8;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success-message {
+            color: #27ae60;
+            background: #d5f4e6;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 10px;
+            color: #667eea;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .posts-section {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .posts-section h2 {
+            margin-bottom: 20px;
+            color: #667eea;
+            font-size: 22px;
+        }
+
+        .post-item {
+            border: 1px solid #e0e0e0;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            transition: box-shadow 0.3s;
+        }
+
+        .post-item:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .post-item h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .post-item .post-date {
+            color: #999;
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+
+        .post-item p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .no-posts {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .back-link {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>📝 Admin Dashboard</h1>
+        <div class="navbar-right">
+            <div class="user-info">
+                Logged in as: <strong id="currentUser">Loading...</strong>
+            </div>
+            <button class="logout-btn" id="logoutBtn">Logout</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Create Post Form -->
+        <div class="form-section">
+            <h2>Create New Blog Post</h2>
+            
+            <div class="error-message" id="errorMessage"></div>
+            <div class="success-message" id="successMessage"></div>
+
+            <form id="createPostForm">
+                <div class="form-group">
+                    <label for="title">Post Title</label>
+                    <input 
+                        type="text" 
+                        id="title" 
+                        name="title"
+                        placeholder="Enter the blog post title"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="content">Post Content</label>
+                    <textarea 
+                        id="content" 
+                        name="content"
+                        placeholder="Enter the blog post content"
+                        required
+                    ></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="date_published">Publication Date</label>
+                    <input 
+                        type="date" 
+                        id="date_published" 
+                        name="date_published"
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="submit-btn" id="submitBtn">Create Post</button>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Creating post...</p>
+                </div>
+            </form>
+        </div>
+
+        <!-- Your Posts Section -->
+        <div class="posts-section">
+            <h2>Your Recent Posts</h2>
+            <div id="postsList">
+                <div class="no-posts">Loading posts...</div>
+            </div>
+        </div>
+
+        <div style="margin-top: 30px; text-align: center;">
+            <a href="/blog" class="back-link">← Back to Blog</a>
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('access_token');
+
+        // Redirect to login if not authenticated
+        if (!token) {
+            window.location.href = '/admin';
+        }
+
+        const form = document.getElementById('createPostForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const currentUserEl = document.getElementById('currentUser');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const postsList = document.getElementById('postsList');
+
+        // Set today's date as default
+        document.getElementById('date_published').valueAsDate = new Date();
+
+        // Fetch and display current user
+        async function fetchCurrentUser() {
+            try {
+                const response = await fetch('/users/me/', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const user = await response.json();
+                    currentUserEl.textContent = user.full_name || user.username;
+                } else {
+                    // Token invalid, redirect to login
+                    localStorage.removeItem('access_token');
+                    window.location.href = '/admin';
+                }
+            } catch (error) {
+                console.error('Error fetching user:', error);
+            }
+        }
+
+        // Fetch and display all posts
+        async function fetchPosts() {
+            try {
+                const response = await fetch('/api/blog');
+                if (response.ok) {
+                    const data = await response.json();
+                    displayPosts(data.posts);
+                }
+            } catch (error) {
+                console.error('Error fetching posts:', error);
+                postsList.innerHTML = '<div class="no-posts">Error loading posts</div>';
+            }
+        }
+
+        function displayPosts(posts) {
+            if (posts.length === 0) {
+                postsList.innerHTML = '<div class="no-posts">No posts yet. Create your first post!</div>';
+                return;
+            }
+
+            postsList.innerHTML = posts.map(post => `
+                <div class="post-item">
+                    <h3>${escapeHtml(post.title)}</h3>
+                    <div class="post-date">Published: ${post.date_published} by ${post.author.full_name}</div>
+                    <p>${escapeHtml(post.content.substring(0, 200))}${post.content.length > 200 ? '...' : ''}</p>
+                </div>
+            `).join('');
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Handle form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+
+            const title = document.getElementById('title').value;
+            const content = document.getElementById('content').value;
+            const date_published = document.getElementById('date_published').value;
+
+            submitBtn.disabled = true;
+            loading.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/blog', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        title,
+                        content,
+                        date_published
+                    })
+                });
+
+                if (response.ok) {
+                    successMessage.textContent = 'Post created successfully!';
+                    successMessage.style.display = 'block';
+                    
+                    // Reset form
+                    form.reset();
+                    document.getElementById('date_published').valueAsDate = new Date();
+                    
+                    // Refresh posts list
+                    fetchPosts();
+                } else {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Failed to create post');
+                }
+            } catch (error) {
+                errorMessage.textContent = error.message || 'An error occurred';
+                errorMessage.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        });
+
+        // Handle logout
+        logoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('token_type');
+            window.location.href = '/admin';
+        });
+
+        // Load initial data
+        fetchCurrentUser();
+        fetchPosts();
+    </script>
+</body>
+</html>

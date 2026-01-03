@@ -10,10 +10,41 @@ Models are the "bridge" between Python and SQL:
 - SQL: Behind the scenes, SQLAlchemy translates this to SQL queries
 """
 
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from app.db.database import Base
+
+# ============================================================================
+# USER MODEL
+# ============================================================================
+class User(Base):
+    """
+    User Model
+    
+    Attributes:
+        id (int): Unique identifier, auto-incremented primary key
+        username (str): Unique username for login
+        email (str): User's email address
+        full_name (str): User's full name
+        hashed_password (str): Hashed password (never store plaintext!)
+        is_admin (bool): Whether user can create/edit blog posts
+        disabled (bool): Whether user account is active
+        blog_posts (List[BlogPost]): Blog posts created by this user
+    """
+    
+    __tablename__ = "users"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True)
+    email = Column(String, unique=True, index=True)
+    full_name = Column(String)
+    hashed_password = Column(String)
+    is_admin = Column(Boolean, default=False)
+    disabled = Column(Boolean, default=False)
+    
+    # Relationship to BlogPost
+    blog_posts = relationship("BlogPost", back_populates="author")
 
 # ============================================================================
 # BLOGPOST MODEL
@@ -29,6 +60,8 @@ class BlogPost(Base):
         title (str): The blog post title
         content (str): The blog post content (can be long)
         date_published (str): The date the post was published
+        author_id (int): Foreign key to the user who created the post
+        author (User): The user who created this post
         comments (List[Comment]): Related comments (one-to-many relationship)
     """
     
@@ -53,9 +86,15 @@ class BlogPost(Base):
     # Date the post was published (stored as string for simplicity)
     date_published = Column(String)
     
+    # Foreign key to the user who created this post
+    author_id = Column(Integer, ForeignKey("users.id"), index=True)
+    
     # ========================================================================
     # RELATIONSHIPS
     # ========================================================================
+    
+    # Relationship to User (author)
+    author = relationship("User", back_populates="blog_posts")
     
     # Relationship to Comment model
     # "Comment" (string) = the related model name
@@ -116,5 +155,6 @@ class Comment(Base):
     # Relationship back to the parent BlogPost
     # This allows you to access the parent post via comment.post
     post = relationship("BlogPost", back_populates="comments")
+
 
 

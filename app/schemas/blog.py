@@ -87,6 +87,15 @@ class BlogPostCreateSchema(BaseModel):
     content: str
     date_published: str
 
+class AuthorSchema(BaseModel):
+    """Schema for author information in blog post response"""
+    id: int
+    username: str
+    full_name: str
+    
+    class Config:
+        from_attributes = True
+
 class BlogPostSchema(BaseModel):
     """
     Blog Post Schema (Full)
@@ -100,6 +109,11 @@ class BlogPostSchema(BaseModel):
         "title": "My Blog Post",
         "content": "This is the content...",
         "date_published": "2024-12-29",
+        "author": {
+            "id": 1,
+            "username": "johndoe",
+            "full_name": "John Doe"
+        },
         "comments": [
             {
                 "id": 1,
@@ -115,11 +129,13 @@ class BlogPostSchema(BaseModel):
     title: str
     content: str
     date_published: str
+    author: AuthorSchema
     comments: List[CommentSchema] = []  # default = empty list if no comments
     
     class Config:
         # Allow converting SQLAlchemy objects to Pydantic
         from_attributes = True
+
 
 
 
