@@ -5,3 +5,4 @@ python-dotenv
 gunicorn
 pyjwt
 pwdlib[argon2]
+python-multipart
