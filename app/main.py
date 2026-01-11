@@ -236,42 +236,42 @@ async def read_users_me(
 @app.get("/", response_class=HTMLResponse)
 def index():
     """Serve the home page (index.html)"""
-    with open("frontend/index.html", "r") as f:
+    with open("frontend/index.html", "r", encoding="utf-8") as f:
         return f.read()
 
 @app.get("/about", response_class=HTMLResponse)
 def about():
     """Serve the about page (about.html)"""
-    with open("frontend/about.html", "r") as f:
+    with open("frontend/about.html", "r", encoding="utf-8") as f:
         return f.read()
 
 @app.get("/resume", response_class=HTMLResponse)
 def resume():
     """Serve the resume page (resume.html)"""
-    with open("frontend/resume.html", "r") as f:
+    with open("frontend/resume.html", "r", encoding="utf-8") as f:
         return f.read()
 
 @app.get("/blog", response_class=HTMLResponse)
-def blog_page():
-    """Serve the blog listing page (blog.html)"""
-    with open("frontend/blog.html", "r") as f:
+def blog():
+    """Serve the blog list page (blog.html)"""
+    with open("frontend/blog.html", "r", encoding="utf-8") as f:
         return f.read()
 
 @app.get("/blog/post", response_class=HTMLResponse)
 def blog_post_page():
     """Serve the individual blog post page (blog_post.html)"""
-    with open("frontend/blog_post.html", "r") as f:
+    with open("frontend/blog_post.html", "r", encoding="utf-8") as f:
         return f.read()
 
 @app.get("/admin", response_class=HTMLResponse)
 def admin_login():
     """Serve the admin login page"""
-    with open("frontend/admin.html", "r") as f:
+    with open("frontend/admin.html", "r", encoding="utf-8") as f:
         return f.read()
 
 @app.get("/admin/dashboard", response_class=HTMLResponse)
 def admin_dashboard():
     """Serve the admin dashboard page"""
-    with open("frontend/admin-dashboard.html", "r") as f:
+    with open("frontend/admin-dashboard.html", "r", encoding="utf-8") as f:
         return f.read()
 
